@@ -14,9 +14,12 @@ public class Patient {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotEmpty(message = "Name cannot be empty")
-    @NotNull(message = "Name cannot be null")
+    @NotNull(message = "Name can not be null")
     private String name;
+
+    @NotNull(message = "Surname can not be null")
+    private String surname;
+
     @Email(message = "Email must be valid")
     private String email;
     @Min(value = 0, message = "Age must be a positive number")
@@ -41,6 +44,14 @@ public class Patient {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public String getSurname() {
+        return surname;
+    }
+
+    public void setSurname(String surname) {
+        this.surname = surname;
     }
 
     public String getEmail() {

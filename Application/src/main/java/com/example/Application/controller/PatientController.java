@@ -3,18 +3,17 @@ package com.example.Application.controller;
 import com.example.Application.model.Patient;
 import com.example.Application.repository.PatientRepository;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.annotation.*;
 
 import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 
 @RestController
 @RequestMapping("/patients")
@@ -23,8 +22,28 @@ public class PatientController {
     private PatientRepository patientRepository;
 
     @GetMapping
-    public List<Patient> getAllPatients() {
-        return patientRepository.findAll();
+    public ResponseEntity<?> getAllPatients(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        //Validation for pagination parameters
+        if(page < 0 || size <= 0) {
+            return ResponseEntity.badRequest().body("Page number must be >= 0 and size must be > 0");
+        }
+
+        //Fetch patients with metadata
+        PageRequest pageRequest = PageRequest.of(page, size);
+        Page<Patient> patients = patientRepository.findAll(pageRequest);
+
+
+        //Create response with metadata
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("patients", patients.getContent());
+        response.put("currentPage", patients.getNumber());
+        response.put("totalItems", patients.getTotalElements());
+        response.put("totalPages", patients.getTotalPages());
+
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/{id}")
@@ -120,15 +139,19 @@ public class PatientController {
     }
 
     @GetMapping("/search")
-    public ResponseEntity<List<Patient>> searchPatients(@RequestParam(required = false) String name, @RequestParam(required = false) Integer age) {
+    public ResponseEntity<List<Patient>> searchPatients(@RequestParam(required = false) String name,
+                                                        @RequestParam (required = false) String surname,
+                                                        @RequestParam(required = false) Integer age) {
         List<Patient> patients;
 
         if(name != null && age != null) {
             patients = patientRepository.findByNameAndAge(name, age); //Custom query for both name and age
         } else if(name != null) {
-            patients = patientRepository.findByName(name); //Custom query for name
+            patients = patientRepository.findByNameContainingIgnoreCase(name); //Custom query for name
         } else if(age != null) {
             patients = patientRepository.findByAge(age); //Custom query for age
+        } else if(surname != null) {
+            patients = patientRepository.findBySurnameContainingIgnoreCase(surname); //Custom query for surname
         } else {
             patients = patientRepository.findAll(); //Return all patients if no parameters provide
         }
