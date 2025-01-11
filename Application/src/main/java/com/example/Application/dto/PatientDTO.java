@@ -2,6 +2,7 @@ package com.example.Application.dto;
 
 import com.example.Application.model.Patient;
 
+
 public class PatientDTO {
     private Long id;
     private String name;

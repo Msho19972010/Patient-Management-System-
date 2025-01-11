@@ -1,9 +1,9 @@
 package com.example.Application.controller;
 
+import com.example.Application.dto.PatientDTO;
 import com.example.Application.model.Patient;
 import com.example.Application.repository.PatientRepository;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Min;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -48,13 +48,9 @@ public class PatientController {
 
     @GetMapping("/{id}")
     public ResponseEntity<?> getPatientByID(@PathVariable Long id) {
-        Optional<Patient> patientOptional = patientRepository.findById(id);
+        PatientDTO patient = new PatientDTO(patientRepository.findById(id).orElseThrow());
 
-        if (patientOptional.isPresent()) {
-            return ResponseEntity.ok(patientOptional.get());
-        } else {
-            return ResponseEntity.status(404).body("Patient with ID " + id + " not found");
-        }
+        return ResponseEntity.ok(patient);
     }
 
     @PostMapping

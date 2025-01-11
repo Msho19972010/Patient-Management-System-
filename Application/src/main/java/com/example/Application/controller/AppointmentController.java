@@ -50,33 +50,51 @@ public class AppointmentController {
     }
 
     //Get appointments by specific patient
-    @GetMapping("/patient/{patientId}")
-    public ResponseEntity<?> getAppointmentsByPatient(@PathVariable Long patientId) {
-        if(!patientRepository.existsById(patientId)) {
-            return ResponseEntity.badRequest().body("Invalid ID");
+    @GetMapping("/{id}")
+    public ResponseEntity<List<AppointmentResponseDTO>> getAppointmentsByPatient(@PathVariable Long id) {
+        if(!patientRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Patient with ID: " + id + " not found");
         }
 
-        List<Appointment> appointments = appointmentRepository.findByPatientId(patientId);
-        return ResponseEntity.ok(appointments);
+        List<Appointment> appointments = appointmentRepository.findByPatientId(id);
+        List<AppointmentResponseDTO> response = appointments.stream()
+                .map(AppointmentResponseDTO::new)
+                .toList();
+        return ResponseEntity.ok(response);
     }
 
     //Update an appointment
     @PutMapping("/{id}")
     public ResponseEntity<?> updateAppointment(@PathVariable Long id, @Valid @RequestBody Appointment updatedAppointment) {
         if(!appointmentRepository.existsById(id)) {
-            return ResponseEntity.notFound().build();
+            return ResponseEntity.badRequest().body("The appointment's ID: " + id + " doesn't exist");
         }
 
-        Appointment existingAppointment = appointmentRepository.findById(id).orElseThrow();
+        Appointment existingAppointment = appointmentRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Appointment with ID: " + id + " not found")
+        );
 
-        //Update fields
-        existingAppointment.setDoctorName(updatedAppointment.getDoctorName());
-        existingAppointment.setPatient(updatedAppointment.getPatient());
-        existingAppointment.setDescription(updatedAppointment.getDescription());
-        existingAppointment.setAppointmentDate(updatedAppointment.getAppointmentDate());
+        //Update fields conditionally
+        if(updatedAppointment.getDoctorName() != null) {
+            existingAppointment.setDoctorName(updatedAppointment.getDoctorName());
+        }
+        //Handle patient update with validation
+        if(updatedAppointment.getPatient() != null && updatedAppointment.getPatient().getId() != null) {
+            Long patientId = updatedAppointment.getPatient().getId();
+            Patient patient = patientRepository.findById(patientId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Patient with ID: " + patientId + " not found"));
+            existingAppointment.setPatient(patient);
+        }
+        if(updatedAppointment.getDescription() != null) {
+            existingAppointment.setDescription(updatedAppointment.getDescription());
+        }
+        if(updatedAppointment.getAppointmentDate() != null) {
+            existingAppointment.setAppointmentDate(updatedAppointment.getAppointmentDate());
+        }
 
         Appointment savedAppointment = appointmentRepository.save(existingAppointment);
-        return ResponseEntity.ok(savedAppointment);
+        AppointmentResponseDTO response = new AppointmentResponseDTO(savedAppointment);
+        return ResponseEntity.ok(response);
     }
 
     //Delete an appointment
