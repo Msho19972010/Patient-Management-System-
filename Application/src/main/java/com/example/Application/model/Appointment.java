@@ -34,9 +34,7 @@ public class Appointment {
         this.patient = patient;
     }
 
-
     //Getters and Setters
-
 
     public Long getId() {
         return id;

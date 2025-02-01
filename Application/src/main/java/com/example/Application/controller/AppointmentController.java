@@ -1,6 +1,6 @@
 package com.example.Application.controller;
 
-import com.example.Application.dto.AppointmentResponseDTO;
+import com.example.Application.dto.BasicAppointmentResponseDTO;
 import com.example.Application.exceptions.ResourceNotFoundException;
 import com.example.Application.model.Appointment;
 import com.example.Application.model.Patient;
@@ -25,8 +25,8 @@ public class AppointmentController {
 
     //Get all appointments
     @GetMapping
-    public ResponseEntity<List<Appointment>> getAllAppointments() {
-        List<Appointment> appointments = appointmentRepository.findAll();
+    public ResponseEntity<List<BasicAppointmentResponseDTO>> getAllAppointments() {
+        List<BasicAppointmentResponseDTO> appointments = appointmentRepository.findAll().stream().map(BasicAppointmentResponseDTO::new).toList();
         return ResponseEntity.ok(appointments);
     }
 
@@ -44,21 +44,21 @@ public class AppointmentController {
         Appointment savedAppointment = appointmentRepository.save(appointment);
 
         //Map to ResponseDTO
-        AppointmentResponseDTO response = new AppointmentResponseDTO(savedAppointment);
+        BasicAppointmentResponseDTO response = new BasicAppointmentResponseDTO(savedAppointment);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     //Get appointments by specific patient
     @GetMapping("/{id}")
-    public ResponseEntity<List<AppointmentResponseDTO>> getAppointmentsByPatient(@PathVariable Long id) {
+    public ResponseEntity<List<BasicAppointmentResponseDTO>> getAppointmentsByPatient(@PathVariable Long id) {
         if(!patientRepository.existsById(id)) {
             throw new ResourceNotFoundException("Patient with ID: " + id + " not found");
         }
 
         List<Appointment> appointments = appointmentRepository.findByPatientId(id);
-        List<AppointmentResponseDTO> response = appointments.stream()
-                .map(AppointmentResponseDTO::new)
+        List<BasicAppointmentResponseDTO> response = appointments.stream()
+                .map(BasicAppointmentResponseDTO::new)
                 .toList();
         return ResponseEntity.ok(response);
     }
@@ -93,7 +93,7 @@ public class AppointmentController {
         }
 
         Appointment savedAppointment = appointmentRepository.save(existingAppointment);
-        AppointmentResponseDTO response = new AppointmentResponseDTO(savedAppointment);
+        BasicAppointmentResponseDTO response = new BasicAppointmentResponseDTO(savedAppointment);
         return ResponseEntity.ok(response);
     }
 

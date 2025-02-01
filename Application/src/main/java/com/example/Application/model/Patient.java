@@ -69,4 +69,12 @@ public class Patient {
     public void setAge(Integer age) {
         this.age = age;
     }
+
+    public List<Appointment> getAppointments() {
+        return appointments;
+    }
+
+    public void setAppointments(List<Appointment> appointments) {
+        this.appointments = appointments;
+    }
 }

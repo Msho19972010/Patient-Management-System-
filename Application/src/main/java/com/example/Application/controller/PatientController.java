@@ -1,5 +1,6 @@
 package com.example.Application.controller;
 
+import com.example.Application.dto.BasicAppointmentResponseDTO;
 import com.example.Application.dto.PatientDTO;
 import com.example.Application.model.Patient;
 import com.example.Application.repository.PatientRepository;
@@ -7,6 +8,7 @@ import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.ObjectError;
@@ -21,6 +23,8 @@ public class PatientController {
     @Autowired
     private PatientRepository patientRepository;
 
+
+    //Getting all patients
     @GetMapping
     public ResponseEntity<?> getAllPatients(
             @RequestParam(defaultValue = "0") int page,
@@ -38,7 +42,7 @@ public class PatientController {
 
         //Create response with metadata
         Map<String, Object> response = new LinkedHashMap<>();
-        response.put("patients", patients.getContent());
+        response.put("patients", patients.stream().map(PatientDTO::new).toList());
         response.put("currentPage", patients.getNumber());
         response.put("totalItems", patients.getTotalElements());
         response.put("totalPages", patients.getTotalPages());
@@ -46,6 +50,7 @@ public class PatientController {
         return ResponseEntity.ok(response);
     }
 
+    //Getting patient by id
     @GetMapping("/{id}")
     public ResponseEntity<?> getPatientByID(@PathVariable Long id) {
         PatientDTO patient = new PatientDTO(patientRepository.findById(id).orElseThrow());
@@ -53,6 +58,33 @@ public class PatientController {
         return ResponseEntity.ok(patient);
     }
 
+    //Getting a patient's appointments
+    @GetMapping("/{id}/appointments")
+    public ResponseEntity<?> getPatientAppointmentsById(@PathVariable Long id) {
+        if(!patientRepository.existsById(id)) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Patient not found");
+        }
+
+        //Fetch the patient
+        Patient patient = patientRepository.findById(id).orElseThrow();
+
+        //Convert appointments to DTOs
+        List<BasicAppointmentResponseDTO> appointmentResponseDTOs = patient.getAppointments()
+                .stream()
+                .map(BasicAppointmentResponseDTO::new)
+                .toList();
+
+        //Build response
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("patientId", patient.getId());
+        response.put("name", patient.getName() + " " + patient.getSurname());
+        response.put("appointments", appointmentResponseDTOs);
+
+        return ResponseEntity.ok(response);
+
+    }
+
+    //Patient creating
     @PostMapping
     public ResponseEntity<?> createPatient(@RequestBody @Valid Patient patient, BindingResult result) {
         if(result.hasErrors()) {
@@ -69,6 +101,8 @@ public class PatientController {
         return ResponseEntity.ok(savedPatient);
     }
 
+
+    //Delete a patient
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deletePatient(@PathVariable Long id) {
         if (!patientRepository.existsById(id)) {
@@ -79,6 +113,7 @@ public class PatientController {
         return ResponseEntity.noContent().build();
     }
 
+    //Patient update
     @PutMapping("/{id}")
     public ResponseEntity<Patient> updatePatient(@PathVariable Long id, @RequestBody Patient updatedPatient) {
         if(!patientRepository.existsById(id)) {
@@ -99,6 +134,7 @@ public class PatientController {
         return ResponseEntity.ok(savedPatient);
     }
 
+    //Patient's certain field(s) update
     @PatchMapping("/{id}")
     public ResponseEntity<Patient> updatePatientsCertainField(@PathVariable Long id, @RequestBody Patient updatedPatient) {
         if(!patientRepository.existsById(id)) {
@@ -134,6 +170,8 @@ public class PatientController {
         return ResponseEntity.ok(savedPatient);
     }
 
+
+    //Searching patient(s)
     @GetMapping("/search")
     public ResponseEntity<List<Patient>> searchPatients(@RequestParam(required = false) String name,
                                                         @RequestParam (required = false) String surname,
